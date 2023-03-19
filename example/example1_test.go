@@ -1,9 +1,12 @@
-# Simple-work-pool-framework
-![项目架构](https://github.com/googs1025/Simple-work-pool-framework/blob/main/image/%E6%9E%B6%E6%9E%84.jpg?raw=true)
+package example
 
-###示例1 
-**Run方法调用**
-```bigquery
+import (
+	"github.com/myconcurrencytools/workpoolframework/pkg/workerpool"
+	"k8s.io/klog/v2"
+	"testing"
+	"time"
+)
+
 /*
 	使用方法：
 	1. 准备全局的任务队列，用于存放任务
@@ -44,8 +47,3 @@ func TestTaskPool1(t *testing.T) {
 	pool.Run() // 启动
 
 }
-```
-###示例2
-```bigquery
-
-```

@@ -1,7 +1,6 @@
 package workerpool
 
 import (
-	"fmt"
 	"k8s.io/klog/v2"
 	"sync"
 	"time"
@@ -59,9 +58,10 @@ func (p *Pool) AddTask(task *Task) {
 
 
 func (p *Pool) RunBackground() {
+	// 启动goroutine，打印。
 	go func() {
 		for {
-			fmt.Printf("Waiting for tasks to come in... \n")
+			klog.Info("Waiting for tasks to come in... \n")
 			time.Sleep(10 * time.Second)
 		}
 	}()
