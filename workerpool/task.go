@@ -1,28 +1,25 @@
 package workerpool
 
-import "fmt"
+import (
+	"k8s.io/klog/v2"
+)
 
 
 /*
 	本质：用全局的切片分配任务给多个workers并发处理。
 
-
-
  */
 
 
 
-// 一个具体任务需求
+// Task 一个具体任务需求
 type Task struct {
-	// 返回错误
-	Err		error
-	// 真正的处理数据
-	Data 	interface{}
-	// 处理函数
-	f 		func(interface{}) error
+	Err		error 					// 返回错误
+	Data 	interface{} 			// 真正的处理数据
+	f 		func(interface{}) error // 处理函数
 }
 
-// 建立任务
+// NewTask 建立任务
 func NewTask(f func(interface{}) error, data interface{}) *Task {
 	return &Task{
 		Data: data,
@@ -30,9 +27,9 @@ func NewTask(f func(interface{}) error, data interface{}) *Task {
 	}
 }
 
-// 执行任务的函数。
+// process 执行任务的函数。
 func process(workerID int, task *Task) {
-	fmt.Printf("worker %d processes task %v\n", workerID, task.Data)
-	task.Err = task.f(task.Data)	// 执行
+ 	klog.Info("worker: ", workerID, ", processes task: ", task.Data)
+	task.Err = task.f(task.Data)	// 执行任务。如果任务执行错误，赋值err
 }
 

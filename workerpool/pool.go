@@ -2,24 +2,26 @@ package workerpool
 
 import (
 	"fmt"
+	"k8s.io/klog/v2"
 	"sync"
 	"time"
 )
 
+// Pool 工作池
 type Pool struct {
 	// list 装task
-	Tasks	[]*Task
-	Workers []*Worker
+	Tasks		  []*Task
+	Workers 	  []*worker
 
-	// 池的数量
-	concurrency	int
+	// 工作池数量
+	concurrency	  int
 	// 用来装
-	collector	chan *Task
+	collector	  chan *Task
 	runBackground chan bool
-	wg 			sync.WaitGroup
+	wg 			  sync.WaitGroup
 }
 
-// 建立一个pool
+// NewPool 建立一个pool
 func NewPool(tasks []*Task, concurrency int) *Pool {
 	return &Pool{
 		Tasks: tasks,
@@ -29,11 +31,12 @@ func NewPool(tasks []*Task, concurrency int) *Pool {
 	}
 }
 
+
 func (p *Pool) Run() {
 	// 总共会开启p.concurrency个goroutine （因为Start函数）
 	for i := 1; i <= p.concurrency; i++ {
-		worker := NewWorker(p.collector, i)
-		worker.Start(&p.wg)
+		worker := newWorker(p.collector, i)
+		worker.start(&p.wg)
 	}
 
 	// 把好的任务放入collector
@@ -64,26 +67,27 @@ func (p *Pool) RunBackground() {
 	}()
 
 	// 启动workers 数量： p.concurrency
-	for i := 1; i < p.concurrency; i++ {
-		workers := NewWorker(p.collector, p.concurrency)
+	for i := 1; i <= p.concurrency; i++ {
+		workers := newWorker(p.collector, i)
 		p.Workers = append(p.Workers, workers)
 
-		go workers.StartBackground()
+		go workers.startBackground()
 	}
 
 	for i := range p.Tasks {
 		p.collector <- p.Tasks[i]
 	}
 
+	// 阻塞
 	<- p.runBackground
 
 }
 
 
 func (p *Pool) Stop() {
-
+	klog.Info("pool close!")
 	for i := range p.Workers {
-		p.Workers[i].Stop()
+		p.Workers[i].stop()
 	}
 	p.runBackground <- true
 }

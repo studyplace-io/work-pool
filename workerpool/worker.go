@@ -1,14 +1,13 @@
 package workerpool
 
 import (
-	"fmt"
+	"k8s.io/klog/v2"
 	"sync"
 )
 
-//
-type Worker struct {
-	// 消费者的id
-	ID			int
+// worker 执行任务的消费者
+type worker struct {
+	ID			int // 消费者的id
 	// 等待处理的任务chan (每个worker都有一个自己的chan)
 	taskChan	chan *Task
 	// 停止通知
@@ -16,8 +15,8 @@ type Worker struct {
 }
 
 // 建立新的消费者
-func NewWorker(channel chan *Task, ID int) *Worker {
-	return &Worker{
+func newWorker(channel chan *Task, ID int) *worker {
+	return &worker{
 		ID: ID,
 		taskChan: channel,
 		quit: make(chan bool),
@@ -25,9 +24,9 @@ func NewWorker(channel chan *Task, ID int) *Worker {
 }
 
 
-// 执行，遍历taskChan，每个任务都启一个goroutine执行。
-func (wr *Worker) Start(wg *sync.WaitGroup) {
-	fmt.Printf("Starting worker %d\n", wr.ID)
+// Start 执行，遍历taskChan，每个任务都启一个goroutine执行。
+func (wr *worker) start(wg *sync.WaitGroup) {
+	klog.Info("Starting worker: ", wr.ID)
 
 	wg.Add(1)
 	go func() {
@@ -39,9 +38,8 @@ func (wr *Worker) Start(wg *sync.WaitGroup) {
 }
 
 
-func (wr *Worker) StartBackground() {
-	fmt.Printf("Starting worker %d\n", wr.ID)
-
+func (wr *worker) startBackground() {
+	klog.Info("Starting worker background: ", wr.ID)
 	for {
 		select {
 		case task := <- wr.taskChan:
@@ -53,9 +51,8 @@ func (wr *Worker) StartBackground() {
 
 }
 
-func (wr *Worker) Stop() {
-	fmt.Printf("Closing worker %d\n", wr.ID)
-
+func (wr *worker) stop() {
+	klog.Info("Closing worker: ", wr.ID)
 	go func() {
 		wr.quit <- true
 	}()

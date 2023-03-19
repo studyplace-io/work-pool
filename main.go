@@ -3,11 +3,10 @@ package main
 
 import (
 	"fmt"
-	"golanglearning/go_basic/for_practice_goroutine/workerpool/workerpool"
+	"github.com/myconcurrencytools/workpoolframework/workerpool"
+	"k8s.io/klog/v2"
 	"math/rand"
 	"time"
-
-
 )
 
 func main() {
@@ -15,7 +14,7 @@ func main() {
 	// 准备存放任务的地方
 	var allTask []*workerpool.Task
 	// 准备100个任务
-	for i := 1; i <= 100; i++ {
+	for i := 1; i <= 71; i++ {
 
 		// 需要做的任务
 		task := workerpool.NewTask(func(data interface{}) error {
@@ -26,7 +25,7 @@ func main() {
 			 */
 
 			time.Sleep(100 * time.Millisecond)
-			fmt.Printf("Task %d processed\n", taskID)
+			fmt.Printf("Task %v processed\n", taskID)
 			return nil
 		}, i)
 
@@ -40,12 +39,12 @@ func main() {
 	//pool.Run()
 
 
-
 	go func() {
 		for {
 			taskID := rand.Intn(100) + 20
 
 			if taskID % 7 == 0 {
+				klog.Info("taskID: ", taskID, "pool stop!")
 				pool.Stop()
 			}
 
@@ -53,7 +52,7 @@ func main() {
 			task := workerpool.NewTask(func(data interface{}) error {
 				taskID := data.(int)
 				time.Sleep(100*time.Millisecond)
-				fmt.Printf("Task %d processed \n", taskID)
+				fmt.Printf("Task %v processed \n", taskID)
 				return nil
 			}, taskID)
 
