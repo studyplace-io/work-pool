@@ -7,22 +7,21 @@ import (
 
 // worker 执行任务的消费者
 type worker struct {
-	ID			int // 消费者的id
+	ID int // 消费者的id
 	// 等待处理的任务chan (每个worker都有一个自己的chan)
-	taskChan	chan *Task
+	taskChan chan *Task
 	// 停止通知
-	quit 	chan bool
+	quit chan bool
 }
 
 // 建立新的消费者
 func newWorker(channel chan *Task, ID int) *worker {
 	return &worker{
-		ID: ID,
+		ID:       ID,
 		taskChan: channel,
-		quit: make(chan bool),
+		quit:     make(chan bool),
 	}
 }
-
 
 // Start 执行，遍历taskChan，每个任务都启一个goroutine执行。
 func (wr *worker) start(wg *sync.WaitGroup) {
@@ -37,14 +36,13 @@ func (wr *worker) start(wg *sync.WaitGroup) {
 	}()
 }
 
-
 func (wr *worker) startBackground() {
 	klog.Info("Starting worker background: ", wr.ID)
 	for {
 		select {
-		case task := <- wr.taskChan:
+		case task := <-wr.taskChan:
 			process(wr.ID, task)
-		case <- wr.quit:
+		case <-wr.quit:
 			return
 		}
 	}
@@ -57,4 +55,3 @@ func (wr *worker) stop() {
 		wr.quit <- true
 	}()
 }
-

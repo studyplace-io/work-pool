@@ -50,15 +50,15 @@ func TestTaskPool2(t *testing.T) {
 			taskID := rand.Intn(100) + 20
 
 			// 随意使用一个用例让pool停止
-			if taskID % 7 == 0 {
+			if taskID%7 == 0 {
 				klog.Info("taskID: ", taskID, "pool stop!")
 				pool.Stop()
 			}
 
-			time.Sleep(time.Duration(rand.Intn(5))*time.Second)
+			time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 			task := workerpool.NewTask(func(data interface{}) error {
 				taskID := data.(int)
-				time.Sleep(100*time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 				klog.Info("Task ", taskID, " processed")
 				return nil
 			}, taskID)

@@ -13,10 +13,9 @@ import (
 	2. 定义需要的任务func
 	3. 遍历任务数，放入全局队列
 	4. 创建且启动工作池
- */
+*/
 
 func TestTaskPool1(t *testing.T) {
-
 
 	// 准备存放任务的地方，全局任务队列
 	var allTask []*workerpool.Task

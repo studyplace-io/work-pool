@@ -9,27 +9,26 @@ import (
 // Pool 工作池
 type Pool struct {
 	// list 装task
-	Tasks		  []*Task
-	Workers 	  []*worker
+	Tasks   []*Task
+	Workers []*worker
 
 	// 工作池数量
-	concurrency	  int
+	concurrency int
 	// 用来装
-	collector	  chan *Task
+	collector     chan *Task
 	runBackground chan bool
-	wg 			  sync.WaitGroup
+	wg            sync.WaitGroup
 }
 
 // NewPool 建立一个pool
 func NewPool(tasks []*Task, concurrency int) *Pool {
 	return &Pool{
-		Tasks: tasks,
-		concurrency: concurrency,
-		collector: make(chan *Task, 10),
+		Tasks:         tasks,
+		concurrency:   concurrency,
+		collector:     make(chan *Task, 10),
 		runBackground: make(chan bool),
 	}
 }
-
 
 func (p *Pool) Run() {
 	// 总共会开启p.concurrency个goroutine （因为Start函数）
@@ -56,7 +55,6 @@ func (p *Pool) AddTask(task *Task) {
 	p.collector <- task
 }
 
-
 func (p *Pool) RunBackground() {
 	// 启动goroutine，打印。
 	go func() {
@@ -79,10 +77,9 @@ func (p *Pool) RunBackground() {
 	}
 
 	// 阻塞
-	<- p.runBackground
+	<-p.runBackground
 
 }
-
 
 func (p *Pool) Stop() {
 	klog.Info("pool close!")
@@ -91,5 +88,3 @@ func (p *Pool) Stop() {
 	}
 	p.runBackground <- true
 }
-
-
