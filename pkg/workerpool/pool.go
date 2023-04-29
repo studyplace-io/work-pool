@@ -50,12 +50,13 @@ func (p *Pool) Run() {
 	p.wg.Wait()
 }
 
-// 把任务放入chan
+// AddTask 把任务放入chan
 func (p *Pool) AddTask(task *Task) {
 	// 放入chan
 	p.collector <- task
 }
 
+// RunBackground 后台运行，需要启动一个goroutine来执行
 func (p *Pool) RunBackground() {
 	// 启动goroutine，打印。
 	go func() {
@@ -82,6 +83,7 @@ func (p *Pool) RunBackground() {
 
 }
 
+// StopBackground 停止后台运行，需要chan通知
 func (p *Pool) StopBackground() {
 	klog.Info("pool close!")
 	for i := range p.Workers {
