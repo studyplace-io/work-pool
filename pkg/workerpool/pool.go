@@ -46,6 +46,7 @@ func (p *Pool) Run() {
 	// 关闭通道
 	close(p.collector)
 
+	// 阻塞，等待所有的goroutine执行完毕
 	p.wg.Wait()
 }
 
@@ -76,12 +77,12 @@ func (p *Pool) RunBackground() {
 		p.collector <- p.Tasks[i]
 	}
 
-	// 阻塞
+	// 阻塞，等待关闭通知
 	<-p.runBackground
 
 }
 
-func (p *Pool) Stop() {
+func (p *Pool) StopBackground() {
 	klog.Info("pool close!")
 	for i := range p.Workers {
 		p.Workers[i].stop()

@@ -1,6 +1,7 @@
 package example
 
 import (
+	"fmt"
 	"github.com/myconcurrencytools/workpoolframework/pkg/workerpool"
 	"k8s.io/klog/v2"
 	"math/rand"
@@ -18,7 +19,7 @@ import (
 
 func TestTaskPool2(t *testing.T) {
 
-	// 准备存放任务的地方
+	// 存放任务的全局队列
 	var allTask []*workerpool.Task
 	// 准备100个任务
 	for i := 1; i <= 100; i++ {
@@ -44,31 +45,31 @@ func TestTaskPool2(t *testing.T) {
 
 	pool := workerpool.NewPool(allTask, 5)
 
-	//
-	go func() {
-		for {
-			taskID := rand.Intn(100) + 20
+	// 启动在后台等待执行
+	go pool.RunBackground()
 
-			// 随意使用一个用例让pool停止
-			if taskID%7 == 0 {
-				klog.Info("taskID: ", taskID, "pool stop!")
-				pool.Stop()
-			}
 
-			time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
-			task := workerpool.NewTask(func(data interface{}) error {
-				taskID := data.(int)
-				time.Sleep(100 * time.Millisecond)
-				klog.Info("Task ", taskID, " processed")
-				return nil
-			}, taskID)
+	for {
+		taskID := rand.Intn(100) + 20
 
-			pool.AddTask(task)
+		// 模拟一个退出条件
+		if taskID%7 == 0 {
+			klog.Info("taskID: ", taskID, "pool stop!")
+			pool.StopBackground()
+			break
 		}
 
-	}()
+		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
+		// 模拟后续加入pool
+		task := workerpool.NewTask(func(data interface{}) error {
+			taskID := data.(int)
+			time.Sleep(100 * time.Millisecond)
+			klog.Info("Task ", taskID, " processed")
+			return nil
+		}, taskID)
 
-	// 确定所有任务后，才能调用
-	pool.RunBackground()
+		pool.AddTask(task)
+	}
 
+	fmt.Println("finished...")
 }
