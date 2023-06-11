@@ -11,16 +11,19 @@ import (
 
 /*
 	使用方法：
-	1. 准备全局的任务队列，用于存放任务
+	1. 创建工作池
 	2. 定义需要的任务func
 	3. 遍历任务数，放入全局队列
-	4. 创建且启动工作池
+	4. 启动工作池
 */
 
 func TestTaskPool2(t *testing.T) {
 
-	// 存放任务的全局队列
-	var allTask []*workerpool.Task
+	// 建立一个池，
+	// input:池数量
+
+	pool := workerpool.NewPool(5)
+
 	// 准备100个任务
 	for i := 1; i <= 100; i++ {
 
@@ -37,13 +40,9 @@ func TestTaskPool2(t *testing.T) {
 		}, i)
 
 		// 所有的任务放入list中
-		allTask = append(allTask, task)
+		pool.AddGlobalQueue(task)
 	}
 
-	// 建立一个池，
-	// input:待处理的任务对列;池数量
-
-	pool := workerpool.NewPool(allTask, 5)
 
 	// 启动在后台等待执行
 	go pool.RunBackground()

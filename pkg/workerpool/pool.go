@@ -21,13 +21,19 @@ type Pool struct {
 }
 
 // NewPool 建立一个pool
-func NewPool(tasks []*Task, concurrency int) *Pool {
+func NewPool(concurrency int) *Pool {
 	return &Pool{
-		Tasks:         tasks,
+		Tasks:         make([]*Task, 0),
 		concurrency:   concurrency,
 		collector:     make(chan *Task, 10),
 		runBackground: make(chan bool),
 	}
+}
+
+// AddGlobalQueue 加入工作池的全局队列，静态加入，用于启动工作池前的任务加入时使用，
+// 在工作池启动后，推荐使用AddTask() 方法动态加入工作池
+func (p *Pool) AddGlobalQueue(task *Task) {
+	p.Tasks = append(p.Tasks, task)
 }
 
 func (p *Pool) Run() {
@@ -35,6 +41,11 @@ func (p *Pool) Run() {
 	for i := 1; i <= p.concurrency; i++ {
 		worker := newWorker(p.collector, i)
 		worker.start(&p.wg)
+	}
+
+	for len(p.Tasks) == 0 {
+		klog.Error("no task in global queue...")
+		time.Sleep(time.Millisecond)
 	}
 
 	// 把好的任务放入collector
@@ -50,7 +61,7 @@ func (p *Pool) Run() {
 	p.wg.Wait()
 }
 
-// AddTask 把任务放入chan
+// AddTask 把任务放入chan，当工作池启动后，动态加入使用
 func (p *Pool) AddTask(task *Task) {
 	// 放入chan
 	p.collector <- task
@@ -72,6 +83,11 @@ func (p *Pool) RunBackground() {
 		p.Workers = append(p.Workers, workers)
 
 		go workers.startBackground()
+	}
+
+	for len(p.Tasks) == 0 {
+		klog.Error("no task in global queue...")
+		time.Sleep(time.Millisecond)
 	}
 
 	for i := range p.Tasks {
