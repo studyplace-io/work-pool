@@ -21,7 +21,6 @@ func TestTaskPool1(t *testing.T) {
 	// input:池数量
 	pool := workerpool.NewPool(5)
 
-
 	// 需要处理的任务
 	tt := func(data interface{}) error {
 		taskID := data.(int)
@@ -42,5 +41,8 @@ func TestTaskPool1(t *testing.T) {
 		pool.AddGlobalQueue(task)
 	}
 	pool.Run() // 启动
+
+
+
 
 }

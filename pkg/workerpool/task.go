@@ -5,8 +5,7 @@ import (
 )
 
 /*
-	本质：用全局的切片分配任务给多个workers并发处理。
-
+ 本质：用全局的切片分配任务给多个workers并发处理。
 */
 
 // Task 一个具体任务需求
@@ -25,7 +24,7 @@ func NewTask(f func(interface{}) error, data interface{}) *Task {
 }
 
 // process 执行任务的函数。
-func process(workerID int, task *Task) {
-	klog.Info("worker: ", workerID, ", processes task: ", task.Data)
-	task.Err = task.f(task.Data) // 执行任务。如果任务执行错误，赋值err
+func (t *Task) process(workerID int) {
+	klog.Info("worker: ", workerID, ", processes task: ", t.Data)
+	t.Err = t.f(t.Data) // 执行任务。如果任务执行错误，赋值err
 }

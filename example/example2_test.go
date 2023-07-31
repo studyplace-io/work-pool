@@ -43,10 +43,8 @@ func TestTaskPool2(t *testing.T) {
 		pool.AddGlobalQueue(task)
 	}
 
-
 	// 启动在后台等待执行
 	go pool.RunBackground()
-
 
 	for {
 		taskID := rand.Intn(100) + 20

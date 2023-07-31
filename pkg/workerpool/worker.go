@@ -14,7 +14,7 @@ type worker struct {
 	quit chan bool
 }
 
-// 建立新的消费者
+// newWorker 建立新的消费者
 func newWorker(channel chan *Task, ID int) *worker {
 	return &worker{
 		ID:       ID,
@@ -23,25 +23,27 @@ func newWorker(channel chan *Task, ID int) *worker {
 	}
 }
 
-// Start 执行，遍历taskChan，每个任务都启一个goroutine执行。
+// start 执行任务，遍历taskChan，每个worker都启一个goroutine执行。
 func (wr *worker) start(wg *sync.WaitGroup) {
 	klog.Info("Starting worker: ", wr.ID)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		// 不断从chan中取出task执行
 		for task := range wr.taskChan {
-			process(wr.ID, task)
+			task.process(wr.ID)
 		}
 	}()
 }
 
+// startBackground 后台执行
 func (wr *worker) startBackground() {
 	klog.Info("Starting worker background: ", wr.ID)
 	for {
 		select {
 		case task := <-wr.taskChan:
-			process(wr.ID, task)
+			task.process(wr.ID)
 		case <-wr.quit:
 			return
 		}

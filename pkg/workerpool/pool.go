@@ -11,11 +11,11 @@ type Pool struct {
 	// list 装task
 	Tasks   []*Task
 	Workers []*worker
-
 	// 工作池数量
 	concurrency int
-	// 用来装
-	collector     chan *Task
+	// collector 用来输入所有Task对象的chan
+	collector chan *Task
+	// runBackground 后台运行时，结束时需要传入的标示
 	runBackground chan bool
 	wg            sync.WaitGroup
 }
@@ -24,6 +24,7 @@ type Pool struct {
 func NewPool(concurrency int) *Pool {
 	return &Pool{
 		Tasks:         make([]*Task, 0),
+		//Workers:       make([]*worker, 0),
 		concurrency:   concurrency,
 		collector:     make(chan *Task, 10),
 		runBackground: make(chan bool),
@@ -36,8 +37,12 @@ func (p *Pool) AddGlobalQueue(task *Task) {
 	p.Tasks = append(p.Tasks, task)
 }
 
+// Run 启动pool，使用Run()方法调用时，只能使用AddGlobalQueue加入全局队列，
+// 一旦Run启动后，就不允许调用AddTask加入Task，如果需动态加入pool，可以使用
+// RunBackground方法
 func (p *Pool) Run() {
-	// 总共会开启p.concurrency个goroutine （因为Start函数）
+	// 总共会开启p.concurrency个goroutine
+	// 启动pool中的每个worker都传入collector chan
 	for i := 1; i <= p.concurrency; i++ {
 		worker := newWorker(p.collector, i)
 		worker.start(&p.wg)
@@ -48,15 +53,14 @@ func (p *Pool) Run() {
 		time.Sleep(time.Millisecond)
 	}
 
-	// 把好的任务放入collector
+	// 把放在tasks列表的的任务放入collector
 	for i := range p.Tasks {
 		p.collector <- p.Tasks[i]
 
 	}
 
-	// 关闭通道
+	// 注意，这里需要close chan。
 	close(p.collector)
-
 	// 阻塞，等待所有的goroutine执行完毕
 	p.wg.Wait()
 }
