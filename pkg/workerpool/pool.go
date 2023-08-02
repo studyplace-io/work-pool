@@ -2,6 +2,7 @@ package workerpool
 
 import (
 	"k8s.io/klog/v2"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -10,25 +11,38 @@ import (
 type Pool struct {
 	// list 装task
 	Tasks   []Task
+	// Workers 列表
 	Workers []*worker
 	// 工作池数量
 	concurrency int
 	// collector 用来输入所有Task对象的chan
 	collector chan Task
 	// runBackground 后台运行时，结束时需要传入的标示
-	runBackground chan bool
-	wg            sync.WaitGroup
+	runBackground  chan bool
+	// timeout 超时时间
+	timeout time.Duration
+	// errorCallback 当任务发生错误时的回调方法
+	errorCallback func(err error)
+	// resultCallback 当任务有结果时的回调方法
+	resultCallback func(result interface{})
+	wg             sync.WaitGroup
 }
 
 // NewPool 建立一个pool
-func NewPool(concurrency int) *Pool {
-	return &Pool{
+func NewPool(concurrency int, opts ...Option) *Pool {
+	p := &Pool{
 		Tasks:         make([]Task, 0),
 		Workers:       make([]*worker, 0),
 		concurrency:   concurrency,
 		collector:     make(chan Task, 10),
 		runBackground: make(chan bool),
 	}
+
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
 }
 
 // AddGlobalQueue 加入工作池的全局队列，静态加入，用于启动工作池前的任务加入时使用，
@@ -44,25 +58,42 @@ func (p *Pool) Run() {
 	// 总共会开启p.concurrency个goroutine
 	// 启动pool中的每个worker都传入collector chan
 	for i := 1; i <= p.concurrency; i++ {
-		worker := newWorker(p.collector, i)
-		worker.start(&p.wg)
+		wr := newWorker(i, p.timeout, p.errorCallback, p.resultCallback)
+		p.Workers = append(p.Workers, wr)
+		wr.start(&p.wg)
 	}
 
-	for len(p.Tasks) == 0 {
-		klog.Error("no task in global queue...")
-		time.Sleep(time.Millisecond)
+	// 如果全局队列没任务，提示一下
+	if len(p.Tasks) == 0 {
+		klog.Info("no task in global queue...")
 	}
+
+	go p.dispatch()
 
 	// 把放在tasks列表的的任务放入collector
 	for i := range p.Tasks {
 		p.collector <- p.Tasks[i]
-
 	}
 
 	// 注意，这里需要close chan。
 	close(p.collector)
+
 	// 阻塞，等待所有的goroutine执行完毕
 	p.wg.Wait()
+}
+
+// dispatch 由pool chan中不断分发给worker chan
+// 使用随机分配的方式
+func (p *Pool) dispatch() {
+	for task := range p.collector {
+		index := rand.Intn(p.concurrency)
+		p.Workers[index].taskChan <- task
+	}
+
+	for _, v := range p.Workers {
+		close(v.taskChan)
+	}
+
 }
 
 // AddTask 把任务放入chan，当工作池启动后，动态加入使用
@@ -83,15 +114,17 @@ func (p *Pool) RunBackground() {
 
 	// 启动workers 数量： p.concurrency
 	for i := 1; i <= p.concurrency; i++ {
-		workers := newWorker(p.collector, i)
-		p.Workers = append(p.Workers, workers)
+		wk := newWorker(i, p.timeout, p.errorCallback, p.resultCallback)
+		p.Workers = append(p.Workers, wk)
 
-		go workers.startBackground()
+		go wk.startBackground()
 	}
 
+	go p.dispatch()
+
+	// 如果全局队列没任务，提示一下
 	if len(p.Tasks) == 0 {
-		klog.Error("no task in global queue...")
-		time.Sleep(time.Millisecond)
+		klog.Info("no task in global queue...")
 	}
 
 	for i := range p.Tasks {

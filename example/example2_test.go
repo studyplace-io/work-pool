@@ -22,13 +22,20 @@ func TestTaskPool2(t *testing.T) {
 	// 建立一个池，
 	// input:池数量
 
-	pool := workerpool.NewPool(5)
+	//pool := workerpool.NewPool(5)
+	pool := workerpool.NewPool(5, workerpool.WithTimeout(1), workerpool.WithErrorCallback(func(err error) {
+		if err != nil {
+			panic(err)
+		}
+	}), workerpool.WithResultCallback(func(i interface{}) {
+		fmt.Println("result: ", i)
+	}))
 
 	// 准备100个任务
 	for i := 1; i <= 100; i++ {
 
 		// 需要做的任务
-		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", i), i, func(data interface{}) error {
+		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", i), i, func(data interface{}) (interface{}, error) {
 			taskID := data.(int)
 
 			/*
@@ -36,7 +43,7 @@ func TestTaskPool2(t *testing.T) {
 			*/
 			time.Sleep(100 * time.Millisecond)
 			klog.Info("Task ", taskID, " processed")
-			return nil
+			return nil, nil
 		})
 
 		// 所有的任务放入list中
@@ -49,7 +56,7 @@ func TestTaskPool2(t *testing.T) {
 	for {
 		taskID := rand.Intn(100) + 20
 
-		// 模拟一个退出条件
+		//// 模拟一个退出条件
 		if taskID%7 == 0 {
 			klog.Info("taskID: ", taskID, "pool stop!")
 			pool.StopBackground()
@@ -58,11 +65,11 @@ func TestTaskPool2(t *testing.T) {
 
 		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 		// 模拟后续加入pool
-		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", taskID), taskID, func(data interface{}) error {
+		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", taskID), taskID, func(data interface{}) (interface{}, error) {
 			taskID := data.(int)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(3 * time.Second)
 			klog.Info("Task ", taskID, " processed")
-			return nil
+			return nil, nil
 		})
 
 		pool.AddTask(task)

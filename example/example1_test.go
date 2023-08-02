@@ -20,16 +20,18 @@ func TestTaskPool1(t *testing.T) {
 
 	// 建立一个工作池
 	// input:池数量
-	pool := workerpool.NewPool(5)
+	pool := workerpool.NewPool(5, workerpool.WithTimeout(1), workerpool.WithResultCallback(func(i interface{}) {
+		fmt.Println("result: ", i)
+	}))
 
 	// 需要处理的任务
-	tt := func(data interface{}) error {
+	tt := func(data interface{}) (interface{}, error) {
 		taskID := data.(int)
 		// 业务逻辑
 
 		time.Sleep(100 * time.Millisecond)
 		klog.Info("Task ", taskID, " processed")
-		return nil
+		return nil, nil
 	}
 
 	// 准备多个个任务

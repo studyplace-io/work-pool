@@ -31,17 +31,17 @@ func (my *MyTask) ChooseTaskType() {
 	}
 }
 
-func (my *MyTask) Execute() error {
+func (my *MyTask) Execute() (interface{}, error) {
 
 	my.Status = TaskRunning
 
 	if err := my.f(my.Input); err != nil {
 		my.Err = err
 		my.Status = TaskFail
-		return err
+		return nil, err
 	}
 	my.Status = TaskSuccess
-	return nil
+	return nil, nil
 }
 
 func (my *MyTask) GetTaskName() string {

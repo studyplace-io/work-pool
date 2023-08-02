@@ -12,9 +12,9 @@ func TestScheduler(t *testing.T) {
 
 	s.Start()
 
-	tsk := workerpool.NewTaskInstance("task1", "aaa", func(i interface{}) error {
+	tsk := workerpool.NewTaskInstance("task1", "aaa", func(i interface{}) (interface{}, error) {
 		fmt.Println(i)
-		return nil
+		return nil, nil
 	})
 
 	s.AddTask(tsk)
