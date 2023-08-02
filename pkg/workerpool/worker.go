@@ -9,13 +9,13 @@ import (
 type worker struct {
 	ID int // 消费者的id
 	// 等待处理的任务chan (每个worker都有一个自己的chan)
-	taskChan chan *Task
+	taskChan chan Task
 	// 停止通知
 	quit chan bool
 }
 
 // newWorker 建立新的消费者
-func newWorker(channel chan *Task, ID int) *worker {
+func newWorker(channel chan Task, ID int) *worker {
 	return &worker{
 		ID:       ID,
 		taskChan: channel,
@@ -32,7 +32,8 @@ func (wr *worker) start(wg *sync.WaitGroup) {
 		defer wg.Done()
 		// 不断从chan中取出task执行
 		for task := range wr.taskChan {
-			task.process(wr.ID)
+			klog.Info("worker: ", wr.ID, ", processes task: ", task.GetTaskName())
+			task.Execute()
 		}
 	}()
 }
@@ -43,7 +44,8 @@ func (wr *worker) startBackground() {
 	for {
 		select {
 		case task := <-wr.taskChan:
-			task.process(wr.ID)
+			klog.Info("worker: ", wr.ID, ", processes task: ", task.GetTaskName())
+			task.Execute()
 		case <-wr.quit:
 			return
 		}

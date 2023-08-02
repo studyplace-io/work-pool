@@ -10,11 +10,11 @@ import (
 )
 
 /*
-	使用方法：
-	1. 创建工作池
-	2. 定义需要的任务func
-	3. 遍历任务数，放入全局队列
-	4. 启动工作池
+ 使用方法：
+ 1. 创建工作池
+ 2. 定义需要的任务func
+ 3. 遍历任务数，放入全局队列
+ 4. 启动工作池
 */
 
 func TestTaskPool2(t *testing.T) {
@@ -28,16 +28,16 @@ func TestTaskPool2(t *testing.T) {
 	for i := 1; i <= 100; i++ {
 
 		// 需要做的任务
-		task := workerpool.NewTask(func(data interface{}) error {
+		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", i), i, func(data interface{}) error {
 			taskID := data.(int)
 
 			/*
-				业务逻辑
+			   业务逻辑
 			*/
 			time.Sleep(100 * time.Millisecond)
 			klog.Info("Task ", taskID, " processed")
 			return nil
-		}, i)
+		})
 
 		// 所有的任务放入list中
 		pool.AddGlobalQueue(task)
@@ -58,12 +58,12 @@ func TestTaskPool2(t *testing.T) {
 
 		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 		// 模拟后续加入pool
-		task := workerpool.NewTask(func(data interface{}) error {
+		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", taskID), taskID, func(data interface{}) error {
 			taskID := data.(int)
 			time.Sleep(100 * time.Millisecond)
 			klog.Info("Task ", taskID, " processed")
 			return nil
-		}, taskID)
+		})
 
 		pool.AddTask(task)
 	}

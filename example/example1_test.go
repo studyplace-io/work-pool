@@ -1,6 +1,7 @@
 package example
 
 import (
+	"fmt"
 	"github.com/myconcurrencytools/workpoolframework/pkg/workerpool"
 	"k8s.io/klog/v2"
 	"testing"
@@ -8,11 +9,11 @@ import (
 )
 
 /*
-	使用方法：
-	1. 创建工作池
-	2. 定义需要的任务func
-	3. 遍历任务数，放入全局队列
-	4. 启动工作池
+ 使用方法：
+ 1. 创建工作池
+ 2. 定义需要的任务func
+ 3. 遍历任务数，放入全局队列
+ 4. 启动工作池
 */
 
 func TestTaskPool1(t *testing.T) {
@@ -35,14 +36,11 @@ func TestTaskPool1(t *testing.T) {
 	for i := 1; i <= 1000; i++ {
 
 		// 需要做的任务
-		task := workerpool.NewTask(tt, i)
+		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", i), i, tt)
 
 		// 所有的任务放入全局队列中
 		pool.AddGlobalQueue(task)
 	}
 	pool.Run() // 启动
-
-
-
 
 }
