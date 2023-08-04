@@ -19,6 +19,6 @@ func TestScheduler(t *testing.T) {
 
 	s.AddTask(tsk)
 
-	<-time.After(time.Second * 60)
+	<-time.After(time.Second * 5)
 	s.Stop()
 }
