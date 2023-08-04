@@ -20,12 +20,11 @@ import (
 func TestTaskPool2(t *testing.T) {
 
 	// 建立一个池，
-	// input:池数量
 
-	//pool := workerpool.NewPool(5)
-	pool := workerpool.NewPool(5, workerpool.WithTimeout(1), workerpool.WithErrorCallback(func(err error) {
+	// pool := workerpool.NewPool(5)
+	pool := workerpool.NewPool(5, workerpool.WithMaxWorkerNum(25), workerpool.WithTimeout(1), workerpool.WithErrorCallback(func(err error) {
 		if err != nil {
-			panic(err)
+			fmt.Println("error handler: ", err)
 		}
 	}), workerpool.WithResultCallback(func(i interface{}) {
 		fmt.Println("result: ", i)

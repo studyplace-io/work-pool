@@ -10,15 +10,17 @@ import (
 // Pool 工作池
 type Pool struct {
 	// list 装task
-	Tasks   []Task
+	Tasks []Task
 	// Workers 列表
 	Workers []*worker
-	// 工作池数量
+	// concurrency 工作池数量
 	concurrency int
+	// maxWorkerNum 最大工作池数量
+	maxWorkerNum int
 	// collector 用来输入所有Task对象的chan
 	collector chan Task
 	// runBackground 后台运行时，结束时需要传入的标示
-	runBackground  chan bool
+	runBackground chan bool
 	// timeout 超时时间
 	timeout time.Duration
 	// errorCallback 当任务发生错误时的回调方法
@@ -26,7 +28,12 @@ type Pool struct {
 	// resultCallback 当任务有结果时的回调方法
 	resultCallback func(result interface{})
 	wg             sync.WaitGroup
+	lock           sync.Mutex
 }
+
+const (
+	defaultMaxWorkerNum = 20
+)
 
 // NewPool 建立一个pool
 func NewPool(concurrency int, opts ...Option) *Pool {
@@ -34,8 +41,17 @@ func NewPool(concurrency int, opts ...Option) *Pool {
 		Tasks:         make([]Task, 0),
 		Workers:       make([]*worker, 0),
 		concurrency:   concurrency,
-		collector:     make(chan Task, 10),
+		collector:     make(chan Task, 500),
 		runBackground: make(chan bool),
+		lock:          sync.Mutex{},
+	}
+
+	if p.maxWorkerNum == 0 {
+		p.maxWorkerNum = defaultMaxWorkerNum
+	}
+
+	if p.concurrency > p.maxWorkerNum {
+		p.maxWorkerNum = p.concurrency
 	}
 
 	for _, opt := range opts {
@@ -68,7 +84,9 @@ func (p *Pool) Run() {
 		klog.Info("no task in global queue...")
 	}
 
+	// 增加扩展功能
 	go p.dispatch()
+	go p.autoScale()
 
 	// 把放在tasks列表的的任务放入collector
 	for i := range p.Tasks {
@@ -80,20 +98,6 @@ func (p *Pool) Run() {
 
 	// 阻塞，等待所有的goroutine执行完毕
 	p.wg.Wait()
-}
-
-// dispatch 由pool chan中不断分发给worker chan
-// 使用随机分配的方式
-func (p *Pool) dispatch() {
-	for task := range p.collector {
-		index := rand.Intn(p.concurrency)
-		p.Workers[index].taskChan <- task
-	}
-
-	for _, v := range p.Workers {
-		close(v.taskChan)
-	}
-
 }
 
 // AddTask 把任务放入chan，当工作池启动后，动态加入使用
@@ -120,7 +124,9 @@ func (p *Pool) RunBackground() {
 		go wk.startBackground()
 	}
 
+	// 增加扩展功能
 	go p.dispatch()
+	go p.autoScale()
 
 	// 如果全局队列没任务，提示一下
 	if len(p.Tasks) == 0 {
@@ -139,8 +145,95 @@ func (p *Pool) RunBackground() {
 // StopBackground 停止后台运行，需要chan通知
 func (p *Pool) StopBackground() {
 	klog.Info("pool close!")
-	for i := range p.Workers {
-		p.Workers[i].stop()
+	close(p.collector)
+	for _, k := range p.Workers {
+		k.stop()
 	}
-	p.runBackground <- true
+	//p.runBackground <- true
+}
+
+// dispatch 由pool chan中不断分发给worker chan
+// 使用随机分配的方式
+func (p *Pool) dispatch() {
+	for task := range p.collector {
+		p.lock.Lock()
+		index := rand.Intn(len(p.Workers))
+		p.Workers[index].taskChan <- task
+		p.lock.Unlock()
+	}
+	// 当p.collector被关闭时，代表任务都执行完毕
+	// 需要把所有worker的chan都关闭
+	for _, v := range p.Workers {
+		close(v.taskChan)
+	}
+
+}
+
+// autoScale 监测自动扩缩容
+func (p *Pool) autoScale() {
+	for {
+
+		time.Sleep(5 * time.Second)
+
+		p.lock.Lock()
+
+		numWorkers := len(p.Workers)
+		numJobs := len(p.collector)
+
+		// 如果全局chan中任务数为0，把数量设置为最小worker数
+		if numJobs == 0 && len(p.Workers) > p.concurrency {
+			p.scaleWorkers(p.concurrency)
+		} else {
+			if numWorkers == 0 {
+				continue
+			}
+			// 如果全局队列内的任务数量大于总容量的3/4，
+			// 就认为任务堆积，需要扩容worker
+			if numJobs > cap(p.collector)*3/4 {
+				p.scaleWorkers(numWorkers + 1)
+			}
+
+		}
+
+		p.lock.Unlock()
+	}
+}
+
+// scaleWorkers 调整worker数方法方法
+func (p *Pool) scaleWorkers(numWorkers int) {
+	// 获取目前的worker数量
+	currentNumWorkers := len(p.Workers)
+
+	// 如果数量相等，直接return
+	if currentNumWorkers == numWorkers {
+		return
+	}
+
+	// 如果计算出的数量超过最大数量，直接使用最大数量
+	if numWorkers >= p.maxWorkerNum {
+		numWorkers = p.maxWorkerNum
+	}
+
+	// 如果期望数量比目前数量大，代表需要扩容
+	if currentNumWorkers <= numWorkers {
+		diff := numWorkers - currentNumWorkers
+		for i := 0; i < diff; i++ {
+			nwk := newWorker(len(p.Workers)+1, p.timeout, p.errorCallback, p.resultCallback)
+			p.Workers = append(p.Workers, nwk)
+			nwk.start(&p.wg)
+		}
+		klog.Infof("Scaled up %d workers\n", diff)
+		klog.Infof("Scaled up to %d workers\n", numWorkers)
+	} else {
+
+		diff := currentNumWorkers - numWorkers
+		for i := diff; i >= 0; i-- {
+			nwk := p.Workers[i]
+			nwk.stop()
+			p.Workers = p.Workers[:i]
+		}
+		klog.Infof("Scaled down %d workers\n", diff)
+		klog.Infof("Scaled down to %d workers\n", numWorkers)
+
+	}
 }

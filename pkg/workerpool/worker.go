@@ -27,7 +27,7 @@ type worker struct {
 func newWorker(ID int, timeout time.Duration, errorCallback func(err error), resultCallback func(interface{})) *worker {
 	return &worker{
 		ID:             ID,
-		taskChan:       make(chan Task, 100),
+		taskChan:       make(chan Task, 10),
 		quit:           make(chan bool),
 		timeout:        timeout,
 		errorCallback:  errorCallback,
@@ -79,13 +79,16 @@ func (wr *worker) executeTaskWithoutTimeout(task Task) (interface{}, error) {
 
 // start 执行任务，遍历taskChan，每个worker都启一个goroutine执行。
 func (wr *worker) start(wg *sync.WaitGroup) {
-	klog.Info("Starting worker: ", wr.ID)
+	klog.Infof("Starting worker: %v\n", wr.ID)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		// 不断从chan中取出task执行
 		for task := range wr.taskChan {
+			if task == nil {
+				continue
+			}
 			klog.Info("worker: ", wr.ID, ", processes task: ", task.GetTaskName())
 			result, err := wr.executeTask(task)
 			wr.handleResult(result, err)
@@ -99,6 +102,9 @@ func (wr *worker) startBackground() {
 	for {
 		select {
 		case task := <-wr.taskChan:
+			if task == nil {
+				continue
+			}
 			klog.Info("worker: ", wr.ID, ", processes task: ", task.GetTaskName())
 			result, err := wr.executeTask(task)
 			wr.handleResult(result, err)

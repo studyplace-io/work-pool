@@ -1,4 +1,12 @@
-# work-pool-framework
+## work-pool-framework
+### golang工作池
+
+#### 项目功能
+- 自定义worker数量
+- 自定义任务超时时间
+- 自定义最大worker数，可根据task数自动扩缩容worker
+- 自定义任务回调与错误回调方法
+
 ![项目架构](https://github.com/googs1025/Simple-work-pool-framework/blob/main/image/%E6%9E%B6%E6%9E%84.jpg?raw=true)
 
 ### 示例1 
@@ -64,7 +72,7 @@ func TestTaskPool2(t *testing.T) {
     // input:池数量
 
     //pool := workerpool.NewPool(5)
-    pool := workerpool.NewPool(5, workerpool.WithTimeout(1), workerpool.WithErrorCallback(func(err error) {
+    pool := workerpool.NewPool(5, workerpool.WithTimeout(1), workerpool.WithMaxWorkerNum(25),, workerpool.WithErrorCallback(func(err error) {
         if err != nil {
             panic(err)
         }

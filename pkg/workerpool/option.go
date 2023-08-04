@@ -12,6 +12,13 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
+// WithMaxWorkerNum 设置最大worker数量
+func WithMaxWorkerNum(maxWorkerNum int) Option {
+	return func(p *Pool) {
+		p.maxWorkerNum = maxWorkerNum
+	}
+}
+
 // WithResultCallback 设置结果回调方法
 func WithResultCallback(callback func(interface{})) Option {
 	return func(p *Pool) {
