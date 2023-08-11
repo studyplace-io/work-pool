@@ -2,7 +2,7 @@ package example
 
 import (
 	"fmt"
-	"github.com/myconcurrencytools/workpoolframework/pkg/workerpool"
+	"github.com/StudyPlace-io/work-pool-framework/pkg/workerpool"
 	"k8s.io/klog/v2"
 	"testing"
 	"time"

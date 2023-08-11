@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/myconcurrencytools/workpoolframework/example/http_example/pkg/common"
-	"github.com/myconcurrencytools/workpoolframework/example/http_example/pkg/server"
+	"github.com/StudyPlace-io/work-pool-framework/example/http_example/pkg/common"
+	"github.com/StudyPlace-io/work-pool-framework/example/http_example/pkg/server"
 	"github.com/spf13/cobra"
 )
 

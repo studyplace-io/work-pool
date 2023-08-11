@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"github.com/myconcurrencytools/workpoolframework/pkg/workerpool"
+	"github.com/StudyPlace-io/work-pool-framework/pkg/workerpool"
 	"log"
 )
 
