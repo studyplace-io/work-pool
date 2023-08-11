@@ -1,7 +1,7 @@
 package scheduler
 
 import (
-	"github.com/StudyPlace-io/work-pool-framework/pkg/workerpool"
+	"github.com/studyplace-io/work-pool-framework/pkg/workerpool"
 	"log"
 )
 

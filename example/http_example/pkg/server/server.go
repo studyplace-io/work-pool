@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
-	"github.com/StudyPlace-io/work-pool-framework/example/http_example/pkg/common"
-	"github.com/StudyPlace-io/work-pool-framework/example/http_example/pkg/scheduler"
-	"github.com/StudyPlace-io/work-pool-framework/example/http_example/pkg/server/model"
 	"github.com/gin-gonic/gin"
+	"github.com/studyplace-io/work-pool-framework/example/http_example/pkg/common"
+	"github.com/studyplace-io/work-pool-framework/example/http_example/pkg/scheduler"
+	"github.com/studyplace-io/work-pool-framework/example/http_example/pkg/server/model"
 )
 
 func HttpServer(c *common.ServerConfig) {
