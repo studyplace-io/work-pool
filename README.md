@@ -6,7 +6,6 @@
 - 自定义任务超时时间
 - 自定义最大worker数，可根据task数自动扩缩容worker
 - 自定义任务回调与错误回调方法
-
 ![项目架构](https://github.com/StudyPlace-io/work-pool-framework/blob/main/image/%E6%9E%B6%E6%9E%84%E6%96%B0%E5%9B%BE.png?raw=true)
 
 ### 示例1 
