@@ -1,6 +1,6 @@
 package main
 
-import "github.com/studyplace-io/work-pool-framework/example/http_example/cmd"
+import "github.com/myconcurrencytools/workpoolframework/example/http_example/cmd"
 
 func main() {
 	cmd.Execute()

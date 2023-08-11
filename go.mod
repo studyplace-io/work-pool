@@ -1,4 +1,4 @@
-module github.com/studyplace-io/work-pool-framework
+module github.com/myconcurrencytools/workpoolframework
 
 go 1.18
 

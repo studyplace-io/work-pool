@@ -2,7 +2,7 @@ package scheduler
 
 import (
 	"fmt"
-	"github.com/studyplace-io/work-pool-framework/pkg/workerpool"
+	"github.com/myconcurrencytools/workpoolframework/pkg/workerpool"
 	"testing"
 	"time"
 )

@@ -3,9 +3,9 @@ package server
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/studyplace-io/work-pool-framework/example/http_example/pkg/common"
-	"github.com/studyplace-io/work-pool-framework/example/http_example/pkg/scheduler"
-	"github.com/studyplace-io/work-pool-framework/example/http_example/pkg/server/model"
+	"github.com/myconcurrencytools/workpoolframework/example/http_example/pkg/common"
+	"github.com/myconcurrencytools/workpoolframework/example/http_example/pkg/scheduler"
+	"github.com/myconcurrencytools/workpoolframework/example/http_example/pkg/server/model"
 )
 
 func HttpServer(c *common.ServerConfig) {
