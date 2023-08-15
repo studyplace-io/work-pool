@@ -20,6 +20,7 @@ func TestTaskPool1(t *testing.T) {
 
 	// 建立一个工作池
 	// input:池数量
+	// 初始化时，可由调用方自由定义输入配置
 	pool := workerpool.NewPool(5, workerpool.WithTimeout(1), workerpool.WithResultCallback(func(i interface{}) {
 		fmt.Println("result: ", i)
 	}))
