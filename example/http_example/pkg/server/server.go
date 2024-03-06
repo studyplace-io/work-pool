@@ -9,7 +9,6 @@ import (
 )
 
 func HttpServer(c *common.ServerConfig) {
-
 	if !c.Debug {
 		gin.SetMode(gin.ReleaseMode)
 	}

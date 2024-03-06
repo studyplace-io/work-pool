@@ -42,7 +42,7 @@ func TestTaskPool2(t *testing.T) {
 			*/
 			time.Sleep(100 * time.Millisecond)
 			klog.Info("Task ", taskID, " processed")
-			return nil, nil
+			return taskID, nil
 		})
 
 		// 所有的任务放入list中
@@ -52,23 +52,24 @@ func TestTaskPool2(t *testing.T) {
 	// 启动在后台等待执行
 	go pool.RunBackground()
 
+	// 模拟启动 pool 后又动态加入 Task 任务
 	for {
 		taskID := rand.Intn(100) + 20
 
-		//// 模拟一个退出条件
+		// 模拟一个退出条件
 		if taskID%7 == 0 {
-			klog.Info("taskID: ", taskID, "pool stop!")
+			klog.Info("taskID: ", taskID, ", pool stop!")
 			pool.StopBackground()
 			break
 		}
 
 		time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
-		// 模拟后续加入pool
+		// 模拟后续加入 pool
 		task := workerpool.NewTaskInstance(fmt.Sprintf("task-%v", taskID), taskID, func(data interface{}) (interface{}, error) {
 			taskID := data.(int)
 			time.Sleep(3 * time.Second)
 			klog.Info("Task ", taskID, " processed")
-			return nil, nil
+			return taskID, nil
 		})
 
 		pool.AddTask(task)

@@ -1,15 +1,30 @@
 package workerpool
 
 import (
+	"fmt"
 	"k8s.io/klog/v2"
 	"math/rand"
 	"sync"
 	"time"
 )
 
-// Pool 工作池
-type Pool struct {
-	// list 装task
+type Pool interface {
+	// AddGlobalQueue 加入工作池的全局队列，静态加入，用于启动工作池前的任务加入时使用
+	AddGlobalQueue(task Task)
+	// AddTask 把任务放入chan，当工作池启动后，动态加入使用
+	AddTask(task Task)
+	// Run 执行
+	Run()
+	// RunBackground 异步执行
+	RunBackground()
+	// StopBackground 停止后台执行
+	StopBackground()
+}
+
+// pool 工作池对象，实现 Pool 接口，
+// 其中有自动扩缩容功能，支持动态传入任务对象
+type pool struct {
+	// Tasks 存储Task接口对象
 	Tasks []Task
 	// Workers 列表
 	Workers []*worker
@@ -27,17 +42,24 @@ type Pool struct {
 	errorCallback func(err error)
 	// resultCallback 当任务有结果时的回调方法
 	resultCallback func(result interface{})
-	wg             sync.WaitGroup
-	lock           sync.Mutex
+	// status 状态
+	status string
+	wg     sync.WaitGroup
+	lock   sync.Mutex
 }
+
+const (
+	Running = "running"
+	Stopped = "stopped"
+)
 
 const (
 	defaultMaxWorkerNum = 20
 )
 
 // NewPool 建立一个pool
-func NewPool(concurrency int, opts ...Option) *Pool {
-	p := &Pool{
+func NewPool(concurrency int, opts ...Option) Pool {
+	p := &pool{
 		Tasks:         make([]Task, 0),
 		Workers:       make([]*worker, 0),
 		concurrency:   concurrency,
@@ -63,14 +85,14 @@ func NewPool(concurrency int, opts ...Option) *Pool {
 
 // AddGlobalQueue 加入工作池的全局队列，静态加入，用于启动工作池前的任务加入时使用，
 // 在工作池启动后，推荐使用AddTask() 方法动态加入工作池
-func (p *Pool) AddGlobalQueue(task Task) {
+func (p *pool) AddGlobalQueue(task Task) {
 	p.Tasks = append(p.Tasks, task)
 }
 
 // Run 启动pool，使用Run()方法调用时，只能使用AddGlobalQueue加入全局队列，
 // 一旦Run启动后，就不允许调用AddTask加入Task，如果需动态加入pool，可以使用
 // RunBackground方法
-func (p *Pool) Run() {
+func (p *pool) Run() {
 	// 总共会开启p.concurrency个goroutine
 	// 启动pool中的每个worker都传入collector chan
 	for i := 1; i <= p.concurrency; i++ {
@@ -92,29 +114,31 @@ func (p *Pool) Run() {
 	for i := range p.Tasks {
 		p.collector <- p.Tasks[i]
 	}
+	// 改变 pool 状态
+	p.status = Running
 
 	// 注意，这里需要close chan。
 	close(p.collector)
 
 	// 阻塞，等待所有的goroutine执行完毕
 	p.wg.Wait()
+
+	p.status = Stopped
 }
 
 // AddTask 把任务放入chan，当工作池启动后，动态加入使用
-func (p *Pool) AddTask(task Task) {
+func (p *pool) AddTask(task Task) {
+	// 判断执行状态
+	if p.status != Running {
+		fmt.Println("please use AddGlobalQueue func to add task when pool is not running")
+		return
+	}
 	// 放入chan
 	p.collector <- task
 }
 
 // RunBackground 后台运行，需要启动一个goroutine来执行
-func (p *Pool) RunBackground() {
-	// 启动goroutine，打印。
-	go func() {
-		for {
-			klog.Info("Waiting for tasks to come in... \n")
-			time.Sleep(10 * time.Second)
-		}
-	}()
+func (p *pool) RunBackground() {
 
 	// 启动workers 数量： p.concurrency
 	for i := 1; i <= p.concurrency; i++ {
@@ -143,18 +167,19 @@ func (p *Pool) RunBackground() {
 }
 
 // StopBackground 停止后台运行，需要chan通知
-func (p *Pool) StopBackground() {
+func (p *pool) StopBackground() {
 	klog.Info("pool close!")
 	close(p.collector)
 	for _, k := range p.Workers {
 		k.stop()
 	}
-	//p.runBackground <- true
+	p.runBackground <- true
+	p.status = Stopped
 }
 
 // dispatch 由pool chan中不断分发给worker chan
 // 使用随机分配的方式
-func (p *Pool) dispatch() {
+func (p *pool) dispatch() {
 	for task := range p.collector {
 		p.lock.Lock()
 		index := rand.Intn(len(p.Workers))
@@ -170,7 +195,7 @@ func (p *Pool) dispatch() {
 }
 
 // autoScale 监测自动扩缩容
-func (p *Pool) autoScale() {
+func (p *pool) autoScale() {
 	for {
 
 		time.Sleep(5 * time.Second)
@@ -199,8 +224,8 @@ func (p *Pool) autoScale() {
 	}
 }
 
-// scaleWorkers 调整worker数方法方法
-func (p *Pool) scaleWorkers(numWorkers int) {
+// scaleWorkers 调整worker数
+func (p *pool) scaleWorkers(numWorkers int) {
 	// 获取目前的worker数量
 	currentNumWorkers := len(p.Workers)
 

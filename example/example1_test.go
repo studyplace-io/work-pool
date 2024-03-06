@@ -32,7 +32,7 @@ func TestTaskPool1(t *testing.T) {
 
 		time.Sleep(100 * time.Millisecond)
 		klog.Info("Task ", taskID, " processed")
-		return nil, nil
+		return taskID, nil
 	}
 
 	// 准备多个个任务

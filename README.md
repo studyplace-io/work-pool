@@ -20,38 +20,38 @@
 - 错误处理回调方法
 ```go
 // Option 选项模式
-type Option func(pool *Pool)
+type Option func(pool *pool)
 
 // WithTimeout 设置超时时间
 func WithTimeout(timeout time.Duration) Option {
-	return func(p *Pool) {
+	return func(p *pool) {
 		p.timeout = timeout
 	}
 }
 
 // WithMaxWorkerNum 设置最大worker数量
 func WithMaxWorkerNum(maxWorkerNum int) Option {
-	return func(p *Pool) {
+	return func(p *pool) {
 		p.maxWorkerNum = maxWorkerNum
 	}
 }
 
 // WithResultCallback 设置结果回调方法
 func WithResultCallback(callback func(interface{})) Option {
-	return func(p *Pool) {
+	return func(p *pool) {
 		p.resultCallback = callback
 	}
 }
 
 // WithErrorCallback 设置错误回调方法
 func WithErrorCallback(callback func(error)) Option {
-	return func(p *Pool) {
+	return func(p *pool) {
 		p.errorCallback = callback
 	}
 }
 ```
 #### 基本使用
-1. 实例化Pool
+1. 实例化 Pool
 ```go
  pool := workerpool.NewPool(5, workerpool.WithTimeout(1), workerpool.WithErrorCallback(func(err error) {
         fmt.Println("WithErrorCallback")
@@ -103,7 +103,7 @@ taskID := data.(int)
 
 `pool.AddGlobalQueue(task) // 所有的任务放入全局队列中`
 
-动态放入：Pool启动时放入
+动态放入：Pool启动后放入
 
 `pool.AddTask(task)`
 
@@ -229,6 +229,6 @@ func TestTaskPool2(t *testing.T) {
 ```
 
 #### 更多示例：
-可在/example目录下查看：
+可在/example目录[参考](./example)查看：
 1. 封装简易调度器
 2. 简易http服务实现执行任务

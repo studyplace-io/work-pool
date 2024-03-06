@@ -6,7 +6,7 @@ import (
 )
 
 type Scheduler struct {
-	pool *workerpool.Pool
+	pool workerpool.Pool
 }
 
 func NewScheduler(workerNum int) *Scheduler {

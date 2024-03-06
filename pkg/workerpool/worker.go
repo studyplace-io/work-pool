@@ -10,7 +10,8 @@ import (
 
 // worker 执行任务的消费者
 type worker struct {
-	ID int // 消费者的id
+	// ID 消费者的id
+	ID int
 	// taskChan 等待处理的任务chan (每个worker都有一个自己的chan)
 	taskChan chan Task
 	// quit 停止通知
@@ -68,7 +69,7 @@ func (wr *worker) executeTaskWithTimeout(task Task) (interface{}, error) {
 	case <-done:
 		return result, err
 	case <-ctx.Done():
-		return nil, fmt.Errorf("task timed out...")
+		return nil, fmt.Errorf("task timed out")
 	}
 }
 
@@ -126,7 +127,5 @@ func (wr *worker) handleResult(result interface{}, err error) {
 // stop 停止worker
 func (wr *worker) stop() {
 	klog.Info("Closing worker: ", wr.ID)
-	go func() {
-		wr.quit <- true
-	}()
+	wr.quit <- true
 }
